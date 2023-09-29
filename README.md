@@ -170,25 +170,92 @@ Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
 
 ### Задание 3
 
-`Приведите ответ в свободной форме........`
+1. Создайте 3 одинаковых виртуальных диска размером 1 Гб с помощью ресурса yandex_compute_disk и мета-аргумента count в файле disk_vm.tf .
+2. Создайте в том же файле одиночную(использовать count или for_each запрещено из-за задания №4) ВМ c именем "storage" . Используйте блок dynamic secondary_disk{..} и мета-аргумент for_each для подключения созданных вами дополнительных дисков.
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
+### Ответ:
 
+Создадим файл [disk_vm.tf](src%2Fdisk_vm.tf) и внесем в него ресурс ```yandex_compute_disk```:
 ```
-Поле для вставки кода...
-....
-....
-....
-....
+resource "yandex_compute_disk" "disk_vm" {
+  count = 3
+  name = "${"disk"}-${count.index}"
+  size = 1
+}
 ```
+Добавим в файл [disk_vm.tf](src%2Fdisk_vm.tf) инструкции по созданию дополнительной ВМ и подключению к ней созданных дисков, добавим дополнительно инструкцию ```depends_on = [yandex_compute_disk.disk_vm]```, чтобы ВМ создавалась только после создания дисков:
+```
+resource "yandex_compute_instance" "storage" {
+  name        = "storage"
+  depends_on = [yandex_compute_disk.disk_vm]
+  platform_id = "standard-v1"
+  resources {
+    cores         = 2
+    memory        = 1
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = data.yandex_compute_image.ubuntu.image_id
+    }
+  }
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+dynamic "secondary_disk" {
+  for_each = yandex_compute_disk.disk_vm[*].id
+  content {
+    disk_id = secondary_disk.value
+  }
+}
+
+  scheduling_policy {
+    preemptible = true
+  }
+  network_interface {
+    subnet_id = yandex_vpc_subnet.develop.id
+    nat       = true
+    security_group_ids = [yandex_vpc_security_group.example.id]
+  }
+
+  metadata = {
+    serial-port-enable = 1
+    ssh-keys           = "ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII2kpc8hkCtD5uVQdw0wUeGlNp/rKarSrCKoifhuRtCF shakal@Razer"
+  }
+
+}
+```
+Инициализируем проект:
+```
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+yandex_compute_disk.disk_vm[0]: Creating...
+yandex_compute_disk.disk_vm[2]: Creating...
+yandex_compute_disk.disk_vm[1]: Creating...
+yandex_compute_disk.disk_vm[0]: Creation complete after 7s [id=fhmjo6adscnlu308rfdo]
+yandex_compute_disk.disk_vm[2]: Creation complete after 7s [id=fhmhe8hpktb181rsuaip]
+yandex_compute_disk.disk_vm[1]: Still creating... [10s elapsed]
+yandex_compute_disk.disk_vm[1]: Still creating... [20s elapsed]
+yandex_compute_disk.disk_vm[1]: Still creating... [30s elapsed]
+yandex_compute_disk.disk_vm[1]: Still creating... [40s elapsed]
+yandex_compute_disk.disk_vm[1]: Creation complete after 40s [id=fhm19phfeaemg4ovo78b]
+yandex_compute_instance.storage: Creating...
+yandex_compute_instance.storage: Still creating... [10s elapsed]
+yandex_compute_instance.storage: Still creating... [20s elapsed]
+yandex_compute_instance.storage: Still creating... [30s elapsed]
+yandex_compute_instance.storage: Creation complete after 34s [id=fhm78165hu031u274849]
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+```
+Результат:
+![task_3_1.png](img%2Ftask_3_1.png)
+
+
+---
 
 ### Задание 4
 
