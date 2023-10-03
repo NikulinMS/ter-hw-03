@@ -5,7 +5,8 @@ resource "yandex_compute_disk" "disk_vm" {
 }
 
 resource "yandex_compute_instance" "storage" {
-  name        = "storage"
+  count = 1
+  name        = "storage-${count.index+1}"
   depends_on = [yandex_compute_disk.disk_vm]
   platform_id = "standard-v1"
   resources {
@@ -37,7 +38,7 @@ dynamic "secondary_disk" {
 
   metadata = {
     serial-port-enable = 1
-    ssh-keys           = "ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII2kpc8hkCtD5uVQdw0wUeGlNp/rKarSrCKoifhuRtCF shakal@Razer"
+    ssh-keys           = local.ssh
   }
 
 }

@@ -27,7 +27,7 @@ resource "yandex_compute_instance" "count" {
 
   metadata = {
     serial-port-enable = 1
-    ssh-keys           = "ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII2kpc8hkCtD5uVQdw0wUeGlNp/rKarSrCKoifhuRtCF shakal@Razer"
+    ssh-keys           = local.ssh
   }
 
 }

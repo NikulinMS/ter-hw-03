@@ -259,40 +259,55 @@ Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
 
 ### Задание 4
 
-`Приведите ответ в свободной форме........`
+1. В файле ansible.tf создайте inventory-файл для ansible. Используйте функцию tepmplatefile и файл-шаблон для создания ansible inventory-файла из лекции. Готовый код возьмите из демонстрации к лекции demonstration2. Передайте в него в качестве переменных группы виртуальных машин из задания 2.1, 2.2 и 3.2, т. е. 5 ВМ.
+2. Инвентарь должен содержать 3 группы [webservers], [databases], [storage] и быть динамическим, т. е. обработать как группу из 2-х ВМ, так и 999 ВМ.
+3. Выполните код. Приложите скриншот получившегося файла.
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
-
+Создадим файл [ansible.tf](src%2Fansible.tf):
 ```
-Поле для вставки кода...
-....
-....
-....
-....
+resource "local_file" "ansible_inventory" {
+  filename = "./inventory.yml"
+  content = templatefile("ansible.tftpl", {
+    webservers = yandex_compute_instance.count,
+    databases = yandex_compute_instance.for_each,
+    storage = yandex_compute_instance.storage,
+  })
+}
 ```
+Создадим файл-шаблон [ansible.tftpl](src%2Fansible.tftpl):
+```
+[webservers]
+%{ for i in webservers }
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]}
+%{ endfor }
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+[databases]
+%{ for i in databases }
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]}
+%{ endfor }
+
+[storage]
+%{ for i in storage }
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]}
+%{ endfor }
+```
+Для того чтобы работала подстановка адресов группы ```storage```, в файле [disk_vm.tf](src%2Fdisk_vm.tf) необходимо добавить цикличность создания ВМ:
+```
+resource "yandex_compute_instance" "storage" {
+  count = 1
+  name        = "storage-${count.index+1}"
+  depends_on = [yandex_compute_disk.disk_vm]
+  platform_id = "standard-v1"
+```
+Выполним код:
+
+![task_4_2.png](img%2Ftask_4_2.png)
+
+Получившийся [inventory.yml](src%2Finventory.yml):
+![task_4_3.png](img%2Ftask_4_3.png)
+
+Проверим установку nginx на хостах:
+![task_4_1.png](img%2Ftask_4_1.png)
 
 ---
-## Дополнительные задания (со звездочкой*)
 
-
-### Задание 5
-
-`Приведите ответ в свободной форме........`
-
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
-
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
